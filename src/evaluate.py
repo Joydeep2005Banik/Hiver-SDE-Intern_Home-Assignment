@@ -69,12 +69,20 @@ def llm_as_judge(results_df: pd.DataFrame):
     Requires OPENAI_API_KEY.
     """
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Skipping LLM-as-a-judge: OPENAI_API_KEY not set.")
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    
+    if not api_key and not groq_api_key:
+        print("Skipping LLM-as-a-judge: Neither OPENAI_API_KEY nor GROQ_API_KEY set.")
         return
         
     from openai import OpenAI
-    client = OpenAI(api_key=api_key)
+    
+    if groq_api_key:
+        client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+        model_name = "llama-3.1-8b-instant"
+    else:
+        client = OpenAI(api_key=api_key)
+        model_name = "gpt-4o-mini"
     
     print("\nRunning LLM-as-a-judge on top 20 examples...")
     sample_df = results_df.head(20)
@@ -103,7 +111,7 @@ Output strictly in JSON:
         
         try:
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model_name,
                 messages=[
                     {"role": "system", "content": judge_prompt},
                     {"role": "user", "content": user_prompt}

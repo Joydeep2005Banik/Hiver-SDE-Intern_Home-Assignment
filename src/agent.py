@@ -13,11 +13,17 @@ class SupportAgent:
         
         # Initialize LLM
         api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            print("WARNING: OPENAI_API_KEY not found in environment. The agent will mock LLM responses if run.")
-            self.llm_client = None
-        else:
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        
+        if groq_api_key:
+            self.llm_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            self.model_name = "llama-3.1-8b-instant"
+        elif api_key:
             self.llm_client = OpenAI(api_key=api_key)
+            self.model_name = "gpt-4o-mini"
+        else:
+            print("WARNING: Neither OPENAI_API_KEY nor GROQ_API_KEY found in environment. The agent will mock LLM responses if run.")
+            self.llm_client = None
 
     def retrieve_context(self, query: str, top_k: int = 3):
         results = self.collection.query(
@@ -64,7 +70,7 @@ Respond strictly in JSON format matching this schema:
         
         try:
             response = self.llm_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}

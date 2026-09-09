@@ -1,0 +1,80 @@
+import os
+import json
+import chromadb
+from chromadb.utils import embedding_functions
+from openai import OpenAI
+
+class SupportAgent:
+    def __init__(self, db_path: str = 'data/chroma_db'):
+        # Initialize Vector DB
+        self.client = chromadb.PersistentClient(path=db_path)
+        self.emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+        self.collection = self.client.get_collection(name="support_kb", embedding_function=self.emb_fn)
+        
+        # Initialize LLM
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("WARNING: OPENAI_API_KEY not found in environment. The agent will mock LLM responses if run.")
+            self.llm_client = None
+        else:
+            self.llm_client = OpenAI(api_key=api_key)
+
+    def retrieve_context(self, query: str, top_k: int = 3):
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=top_k
+        )
+        context = ""
+        for idx in range(len(results['documents'][0])):
+            past_query = results['documents'][0][idx]
+            past_reply = results['metadatas'][0][idx]['reply']
+            context += f"Past Customer: {past_query}\nBrand Reply: {past_reply}\n\n"
+        return context.strip()
+
+    def _mock_llm_response(self, query: str, context: str):
+        # A fallback if no API key is provided, just for testing the pipeline flow
+        return {
+            "intent": "general_inquiry",
+            "draft_reply": "Thank you for reaching out! We are currently looking into this. DM us if you need more help.",
+            "auto_handle": True,
+            "escalation_reason": ""
+        }
+
+    def process_query(self, query: str) -> dict:
+        context = self.retrieve_context(query)
+        
+        if not self.llm_client:
+            return self._mock_llm_response(query, context)
+            
+        system_prompt = """You are an AI support agent for AppleSupport on Twitter. 
+Your job is to read an incoming customer query and past similar resolved cases.
+1. Classify the intent into one of: [software_issue, hardware_issue, account_issue, general_inquiry]
+2. Draft a reply grounded in how similar cases were resolved. Keep it short, polite, and under 280 characters.
+3. Decide if the query can be auto-handled (True) or if it requires human escalation (False). Escalate if the customer is very angry, the issue is highly complex, or past context doesn't provide a clear solution. Provide a reason if escalated.
+
+Respond strictly in JSON format matching this schema:
+{
+  "intent": "string",
+  "draft_reply": "string",
+  "auto_handle": boolean,
+  "escalation_reason": "string (empty if auto_handle is true)"
+}"""
+        
+        user_prompt = f"### Past Similar Cases:\n{context}\n\n### Current Customer Query:\n{query}"
+        
+        try:
+            response = self.llm_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={ "type": "json_object" },
+                temperature=0.0
+            )
+            
+            result_str = response.choices[0].message.content
+            return json.loads(result_str)
+        except Exception as e:
+            print(f"Error calling LLM: {e}")
+            return self._mock_llm_response(query, context)

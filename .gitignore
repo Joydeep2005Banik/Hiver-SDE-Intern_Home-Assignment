@@ -1,0 +1,23 @@
+# Datasets and large files
+dataset/twcs/twcs.csv
+dataset/twcs/
+dataset/sample.csv
+data/processed_conversations.csv
+data/chroma_db/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Output
+data/predictions.csv
+data/evaluation_results.csv

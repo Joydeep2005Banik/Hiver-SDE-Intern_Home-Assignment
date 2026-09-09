@@ -17,7 +17,7 @@ class SupportAgent:
         
         if groq_api_key:
             self.llm_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            self.model_name = "mixtral-8x7b-32768"
+            self.model_name = "llama-3.1-8b-instant"
         elif api_key:
             self.llm_client = OpenAI(api_key=api_key)
             self.model_name = "gpt-4o-mini"

@@ -23,5 +23,3 @@ data/predictions.csv
 data/evaluation_results.csv
 
 
-#models
-models.py

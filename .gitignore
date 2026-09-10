@@ -23,4 +23,3 @@ data/predictions.csv
 data/evaluation_results.csv
 
 
-py-test.py

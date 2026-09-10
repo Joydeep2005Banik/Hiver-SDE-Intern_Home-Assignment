@@ -1,8 +1,5 @@
-
-
-
-
-
+import os
+os.environ["GROQ_API_KEY"]="api_key"
 
 from src.agent import SupportAgent
 

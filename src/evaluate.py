@@ -79,7 +79,7 @@ def llm_as_judge(results_df: pd.DataFrame):
     
     if groq_api_key:
         client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-        model_name = "llama-3.1-8b-instant"
+        model_name = "openai/gpt-oss-20b"
     else:
         client = OpenAI(api_key=api_key)
         model_name = "gpt-4o-mini"

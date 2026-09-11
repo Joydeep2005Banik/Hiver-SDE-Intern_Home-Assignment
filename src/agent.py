@@ -25,6 +25,8 @@ class SupportAgent:
             print("WARNING: Neither OPENAI_API_KEY nor GROQ_API_KEY found in environment. The agent will mock LLM responses if run.")
             self.llm_client = None
 
+        self.conversation_history = []
+
     def retrieve_context(self, query: str, top_k: int = 3):
         results = self.collection.query(
             query_texts=[query],
@@ -66,7 +68,15 @@ Respond strictly in JSON format matching this schema:
   "escalation_reason": "string (empty if auto_handle is true)"
 }"""
         
-        user_prompt = f"### Past Similar Cases:\n{context}\n\n### Current Customer Query:\n{query}"
+        # Format the history
+        history_str = ""
+        for msg in self.conversation_history:
+            history_str += f"{msg['role'].capitalize()}: {msg['content']}\n"
+            
+        user_prompt = f"### Past Similar Cases:\n{context}\n\n"
+        if history_str:
+            user_prompt += f"### Conversation History:\n{history_str}\n\n"
+        user_prompt += f"### Current Customer Query:\n{query}"
         
         try:
             response = self.llm_client.chat.completions.create(
@@ -80,7 +90,13 @@ Respond strictly in JSON format matching this schema:
             )
             
             result_str = response.choices[0].message.content
-            return json.loads(result_str)
+            result_dict = json.loads(result_str)
+            
+            # Update history
+            self.conversation_history.append({"role": "customer", "content": query})
+            self.conversation_history.append({"role": "agent", "content": result_dict.get("draft_reply", "")})
+            
+            return result_dict
         except Exception as e:
             print(f"Error calling LLM: {e}")
             return self._mock_llm_response(query, context)

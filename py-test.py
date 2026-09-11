@@ -1,5 +1,7 @@
-import os
-os.environ["GROQ_API_KEY"]="api_key"
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from src.agent import SupportAgent
 

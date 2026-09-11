@@ -30,6 +30,32 @@ To run the full evaluation harness (Automated Metrics + LLM-as-a-judge):
 python3 src/evaluate.py --input data/golden_eval.csv --output data/evaluation_results.csv --max 20
 ```
 
+## System Architecture
+
+```mermaid
+graph TD
+    subgraph Data & Knowledge Base
+        A[Raw Twitter Dataset] -->|src/data_prep.py| B(Processed Conversations CSV)
+        B -->|src/build_rag.py<br>Sentence Transformers| C[(ChromaDB Vector Store)]
+    end
+
+    subgraph Core AI Agent
+        D[Customer Query] -->|chat.py / src/agent.py| E[SupportAgent Engine]
+        E -->|Semantic Search| C
+        C -.->|Top 3 Historical Contexts| E
+        E -->|Query + Context + History| F[LLM API Groq/OpenAI]
+        F -.->|JSON Object| E
+        E --> G[Agent Decision:<br>Intent, Reply, Auto-Handle]
+    end
+
+    subgraph Evaluation Framework
+        B -->|src/generate_golden_set.py| H[Golden Eval Set]
+        H -->|src/evaluate.py| I[Testing Harness]
+        E -->|Simulated Queries| I
+        I -->|LLM-as-a-judge| J[Performance Metrics:<br>Accuracy, Helpfulness, Tone]
+    end
+```
+
 ## Repository Structure
 
 - `src/data_prep.py`: Filters the raw Twitter dataset for AppleSupport threads.

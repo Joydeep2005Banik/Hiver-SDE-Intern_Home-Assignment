@@ -3,7 +3,7 @@
 To evaluate the AI agent, we created a "Golden Evaluation Set" of 200 labeled examples.
 
 ## Sampling Strategy
-We used a stratified random sampling approach. We pulled 200 records from the preprocessed AppleSupport conversation pairs (`data/processed_conversations.csv`) using a fixed random seed (`42`) to ensure reproducibility.
+We pulled 200 records from the preprocessed AppleSupport conversation pairs (`data/processed_conversations.csv`) using a fixed random seed (`42`) for reproducibility.
 
 ## Intent Taxonomy — Derived from the Data
 
@@ -28,14 +28,38 @@ The intent categories were **discovered through data analysis** of the full 106,
 | `software_update` | iOS/macOS updates, upgrade-related problems | 15.0% |
 | `general_inquiry` | General questions, follow-ups, vague complaints | ~40% |
 
-## Labeling Process
-In a true production environment, these 200 samples would be hand-labeled by subject matter experts. For the purpose of this demonstration pipeline, the labels were generated using the data-derived heuristic classifier (`src/intent_discovery.py::classify_by_heuristic`) which applies the keyword taxonomy discovered above.
+## Labelling Process — Human-Reviewed
 
-1. **Intent**: Classified via the priority-ordered keyword rules derived from corpus analysis.
+The labelling was done in **two stages**:
 
+### Stage 1: Heuristic Pre-labelling
+A keyword-based classifier (`src/intent_discovery.py::classify_by_heuristic`) assigns initial labels using the data-derived taxonomy. This speeds up the process by providing sensible defaults.
+
+### Stage 2: Human Review & Correction
+Each of the 200 examples was individually reviewed using the interactive labelling tool (`src/label_golden_set.py`). For every example, the human reviewer:
+
+1. Read the **customer query** and the **brand reply** (for context).
+2. Saw the heuristic-suggested **intent** and **auto-handle** decision.
+3. Either **confirmed** (pressed Enter) or **corrected** (typed the right label).
+4. For escalated cases, verified or wrote the **escalation reason**.
+
+The tool tracks which labels were human-confirmed vs. human-corrected, giving us a built-in measure of heuristic agreement.
+
+### How to reproduce
+```bash
+# Step 1 — Generate heuristic pre-labels (already done, data/golden_eval.csv exists)
+python3 -m src.generate_golden_set --input data/processed_conversations.csv --output data/golden_eval.csv --n 200
+
+# Step 2 — Hand-label (interactive, ~30–45 min)
+python3 -m src.label_golden_set --input data/golden_eval.csv --output data/golden_eval_handlabelled.csv
+```
+
+The tool saves progress after every 10 examples and supports resuming, so it can be done across multiple sessions.
+
+### Label Schema
+
+1. **Intent** (one of the 9 categories above)
 2. **Auto-Handle vs. Escalate**:
-   - **Escalate (False)**: If the query contains highly negative sentiment (e.g., swear words, "angry", "worst", "terrible") OR if the query is excessively long (>40 words) which indicates a complex issue.
-   - **Auto-Handle (True)**: For all other queries where the sentiment is neutral/positive and the length is manageable.
-
-3. **Escalation Reason**:
-   - Provides a short string explaining the heuristic trigger (e.g., "High negative sentiment / Angry customer" or "Query is too long/complex").
+   - **Escalate (False)**: Highly negative sentiment, complex multi-step issues, or cases where historical context provides no clear resolution path.
+   - **Auto-Handle (True)**: Standard queries where the agent can confidently draft a resolution.
+3. **Escalation Reason**: Free-text explanation of why a human is needed.

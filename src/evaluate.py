@@ -63,17 +63,17 @@ def compute_metrics(results_df: pd.DataFrame):
         print(f"Auto-Handle Accuracy: {acc_auto:.4f}")
         print(f"Auto-Handle F1 Score: {f1_auto:.4f}")
 
-def llm_as_judge(results_df: pd.DataFrame):
+def llm_as_judge(results_df: pd.DataFrame, output_csv: str):
     """
-    Evaluates the predicted_draft_reply using an LLM.
-    Requires OPENAI_API_KEY.
+    Evaluates the predicted_draft_reply using an LLM and saves row-by-row scores.
+    Requires OPENAI_API_KEY or GROQ_API_KEY.
     """
     api_key = os.getenv("OPENAI_API_KEY")
     groq_api_key = os.getenv("GROQ_API_KEY")
     
     if not api_key and not groq_api_key:
         print("Skipping LLM-as-a-judge: Neither OPENAI_API_KEY nor GROQ_API_KEY set.")
-        return
+        return results_df
         
     from openai import OpenAI
     
@@ -85,11 +85,18 @@ def llm_as_judge(results_df: pd.DataFrame):
         model_name = "gpt-4o-mini"
     
     print("\nRunning LLM-as-a-judge on top 20 examples...")
-    sample_df = results_df.head(20)
     
+    # Ensure columns exist
+    if 'llm_tone' not in results_df.columns:
+        results_df['llm_tone'] = pd.NA
+        results_df['llm_helpfulness'] = pd.NA
+        results_df['llm_groundedness'] = pd.NA
+        results_df['llm_reasoning'] = pd.NA
+        
     total_tone = 0
     total_helpfulness = 0
     total_groundedness = 0
+    evaluated_count = 0
     
     judge_prompt = """You are an expert customer support evaluator.
 Given a Customer Query, the Agent's Draft Reply, and the Reference Brand Reply (how the brand actually answered), score the Draft Reply on three criteria from 1 to 5.
@@ -106,7 +113,15 @@ Output strictly in JSON:
   "reasoning": "string"
 }"""
 
-    for _, row in tqdm(sample_df.iterrows(), total=len(sample_df)):
+    for i, row in tqdm(results_df.head(20).iterrows(), total=min(len(results_df), 20)):
+        # Skip if already scored
+        if pd.notna(row.get('llm_tone')):
+            total_tone += row['llm_tone']
+            total_helpfulness += row['llm_helpfulness']
+            total_groundedness += row['llm_groundedness']
+            evaluated_count += 1
+            continue
+            
         user_prompt = f"Customer Query: {row['customer_query']}\nReference Reply: {row['brand_reply_reference']}\nAgent Draft: {row['predicted_draft_reply']}"
         
         try:
@@ -120,26 +135,40 @@ Output strictly in JSON:
                 temperature=0.0
             )
             scores = json.loads(response.choices[0].message.content)
+            
+            results_df.at[i, 'llm_tone'] = scores.get('tone')
+            results_df.at[i, 'llm_helpfulness'] = scores.get('helpfulness')
+            results_df.at[i, 'llm_groundedness'] = scores.get('groundedness')
+            results_df.at[i, 'llm_reasoning'] = scores.get('reasoning')
+            
             total_tone += scores.get('tone', 0)
             total_helpfulness += scores.get('helpfulness', 0)
             total_groundedness += scores.get('groundedness', 0)
+            evaluated_count += 1
+            
+            # Save progress
+            results_df.to_csv(output_csv, index=False)
+            
         except Exception as e:
             print(f"Judge error: {e}")
             
-    n = len(sample_df)
-    print("\n--- LLM-as-a-judge Results (Averages over 20 samples) ---")
-    print(f"Tone:         {total_tone/n:.2f}/5")
-    print(f"Helpfulness:  {total_helpfulness/n:.2f}/5")
-    print(f"Groundedness: {total_groundedness/n:.2f}/5")
-    print("\nTo compute Human Agreement (Cohen's Kappa), see `eval_calibration.ipynb`.")
+    if evaluated_count > 0:
+        print("\n--- LLM-as-a-judge Results (Averages over 20 samples) ---")
+        print(f"Tone:         {total_tone/evaluated_count:.2f}/5")
+        print(f"Helpfulness:  {total_helpfulness/evaluated_count:.2f}/5")
+        print(f"Groundedness: {total_groundedness/evaluated_count:.2f}/5")
+        print(f"\nSaved detailed LLM scores to {output_csv}")
+        print("To compute Human Agreement (Cohen's Kappa), run `python3 -m src.llm_judge_calibration`")
+    
+    return results_df
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', type=str, default='data/golden_eval.csv')
+    parser.add_argument('--input', type=str, default='data/golden_eval_handlabelled.csv')
     parser.add_argument('--output', type=str, default='data/evaluation_results.csv')
     parser.add_argument('--max', type=int, default=None, help='Max rows to evaluate')
     args = parser.parse_args()
     
     results = run_pipeline(args.input, args.output, args.max)
     compute_metrics(results)
-    llm_as_judge(results)
+    results = llm_as_judge(results, args.output)

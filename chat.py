@@ -37,6 +37,11 @@ def main():
             if result.get('escalation_reason'):
                 print(f"Escalation Reason: {result.get('escalation_reason')}")
             
+            # Print the LLM-generated contextual follow-up
+            follow_up = result.get('follow_up', '')
+            if follow_up:
+                print(f"\n{follow_up}")
+            
         except KeyboardInterrupt:
             print("\nEnding chat. Goodbye!")
             break

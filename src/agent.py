@@ -49,7 +49,8 @@ class SupportAgent:
             "intent": classify_by_heuristic(query),
             "draft_reply": "Thank you for reaching out! We are currently looking into this. DM us if you need more help.",
             "auto_handle": True,
-            "escalation_reason": ""
+            "escalation_reason": "",
+            "follow_up": "Is there anything else I can help you with?"
         }
 
     def process_query(self, query: str) -> dict:
@@ -72,13 +73,15 @@ Your job is to read an incoming customer query and past similar resolved cases.
 
 2. Draft a reply grounded in how similar cases were resolved. Keep it short, polite, and under 280 characters.
 3. Decide if the query can be auto-handled (True) or if it requires human escalation (False). Escalate if the customer is very angry, the issue is highly complex, or past context doesn't provide a clear solution. Provide a reason if escalated.
+4. Write a contextual follow-up: if auto_handle is true, ask a relevant follow-up question based on the customer's issue (e.g. "Would you like steps for a force restart?" or "Can you tell me which app is crashing?"). If auto_handle is false, write a brief handoff message explaining a human agent will take over.
 
 Respond strictly in JSON format matching this schema:
 {{
   "intent": "string (one of: {', '.join(INTENT_NAMES)})",
   "draft_reply": "string",
   "auto_handle": boolean,
-  "escalation_reason": "string (empty if auto_handle is true)"
+  "escalation_reason": "string (empty if auto_handle is true)",
+  "follow_up": "string (contextual follow-up question or escalation handoff message)"
 }}"""
         
         # Format the history
@@ -105,9 +108,13 @@ Respond strictly in JSON format matching this schema:
             result_str = response.choices[0].message.content
             result_dict = json.loads(result_str)
             
-            # Update history
+            # Update history with both the reply and follow-up
             self.conversation_history.append({"role": "customer", "content": query})
-            self.conversation_history.append({"role": "agent", "content": result_dict.get("draft_reply", "")})
+            agent_msg = result_dict.get("draft_reply", "")
+            follow_up = result_dict.get("follow_up", "")
+            if follow_up:
+                agent_msg += f" {follow_up}"
+            self.conversation_history.append({"role": "agent", "content": agent_msg})
             
             return result_dict
         except Exception as e:

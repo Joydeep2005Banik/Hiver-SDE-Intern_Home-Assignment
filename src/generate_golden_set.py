@@ -2,33 +2,35 @@ import pandas as pd
 import re
 import os
 import argparse
+from src.intent_discovery import classify_by_heuristic
+
 
 def heuristic_label(text):
-    text = text.lower()
+    """Assign intent + auto-handle/escalate labels using data-derived rules.
     
-    # Intent
-    if re.search(r'ios|update|app|crash|software|bug|glitch', text):
-        intent = 'software_issue'
-    elif re.search(r'battery|screen|crack|charge|hardware|button|speaker|macbook|phone', text):
-        intent = 'hardware_issue'
-    elif re.search(r'password|apple id|account|login|icloud', text):
-        intent = 'account_issue'
-    else:
-        intent = 'general_inquiry'
-        
+    Intent classification uses the taxonomy discovered via keyword-frequency
+    analysis of 106k+ AppleSupport conversations (see src/intent_discovery.py).
+    
+    Escalation heuristic flags highly negative sentiment or overly complex
+    (long) queries.
+    """
+    intent = classify_by_heuristic(text)
+
+    text_lower = text.lower()
+
     # Auto-handle vs Escalate
-    # Escalate if angry or very complex
-    if re.search(r'fuck|shit|angry|hate|ridiculous|worst|sucks|terrible', text):
+    if re.search(r'fuck|shit|angry|hate|ridiculous|worst|sucks|terrible', text_lower):
         auto_handle = False
         escalation_reason = 'High negative sentiment / Angry customer'
-    elif len(text.split()) > 40:
+    elif len(text_lower.split()) > 40:
         auto_handle = False
         escalation_reason = 'Query is too long/complex'
     else:
         auto_handle = True
         escalation_reason = ''
-        
+
     return intent, auto_handle, escalation_reason
+
 
 def generate_golden_set(input_path: str, output_path: str, num_samples: int = 200):
     print(f"Loading {input_path}...")

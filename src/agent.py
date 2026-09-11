@@ -3,6 +3,7 @@ import json
 import chromadb
 from chromadb.utils import embedding_functions
 from openai import OpenAI
+from src.intent_discovery import INTENT_NAMES, INTENT_TAXONOMY
 
 class SupportAgent:
     def __init__(self, db_path: str = 'data/chroma_db'):
@@ -40,9 +41,12 @@ class SupportAgent:
         return context.strip()
 
     def _mock_llm_response(self, query: str, context: str):
-        # A fallback if no API key is provided, just for testing the pipeline flow
+        # A fallback if no API key is provided, just for testing the pipeline flow.
+        # Uses the data-derived heuristic classifier so mock results are
+        # at least directionally correct.
+        from src.intent_discovery import classify_by_heuristic
         return {
-            "intent": "general_inquiry",
+            "intent": classify_by_heuristic(query),
             "draft_reply": "Thank you for reaching out! We are currently looking into this. DM us if you need more help.",
             "auto_handle": True,
             "escalation_reason": ""
@@ -54,19 +58,28 @@ class SupportAgent:
         if not self.llm_client:
             return self._mock_llm_response(query, context)
             
-        system_prompt = """You are an AI support agent for AppleSupport on Twitter. 
+        # Build intent list string from the data-derived taxonomy
+        intent_descriptions = "\n".join(
+            f"  - {name}: {meta['description']}"
+            for name, meta in INTENT_TAXONOMY.items()
+        )
+
+        system_prompt = f"""You are an AI support agent for AppleSupport on Twitter.
 Your job is to read an incoming customer query and past similar resolved cases.
-1. Classify the intent into one of: [software_issue, hardware_issue, account_issue, general_inquiry]
+
+1. Classify the intent into EXACTLY ONE of the following categories (derived from analysis of 106k+ historical AppleSupport conversations):
+{intent_descriptions}
+
 2. Draft a reply grounded in how similar cases were resolved. Keep it short, polite, and under 280 characters.
 3. Decide if the query can be auto-handled (True) or if it requires human escalation (False). Escalate if the customer is very angry, the issue is highly complex, or past context doesn't provide a clear solution. Provide a reason if escalated.
 
 Respond strictly in JSON format matching this schema:
-{
-  "intent": "string",
+{{
+  "intent": "string (one of: {', '.join(INTENT_NAMES)})",
   "draft_reply": "string",
   "auto_handle": boolean,
   "escalation_reason": "string (empty if auto_handle is true)"
-}"""
+}}"""
         
         # Format the history
         history_str = ""

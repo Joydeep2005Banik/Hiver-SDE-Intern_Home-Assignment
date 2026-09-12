@@ -45,7 +45,8 @@ def llm_judge_calibration(input_csv: str):
         start_idx = df['human_tone'].notna().sum()
         
     if start_idx >= total:
-        print(f"\nYou have already scored {total} examples. Run the analysis notebook to see Kappa!")
+        print(f"\nAll {total} examples already scored!")
+        _compute_kappa(input_csv)
         return
 
     print(f"\nYou will review {total - start_idx} drafted replies.")
@@ -87,9 +88,12 @@ def llm_judge_calibration(input_csv: str):
             break
             
     print("\nSaved human scores to:", input_csv)
-    
-    # Calculate Cohen's Kappa
-    df = pd.read_csv(input_csv) # reload
+    _compute_kappa(input_csv)
+
+
+def _compute_kappa(input_csv: str):
+    """Calculate and display Cohen's Kappa between human and LLM scores."""
+    df = pd.read_csv(input_csv)
     if 'human_tone' in df.columns and 'llm_tone' in df.columns:
         if df['human_tone'].notna().sum() > 0 and df['llm_tone'].notna().sum() > 0:
             scored = df[df['human_tone'].notna() & df['llm_tone'].notna()].copy()

@@ -81,3 +81,21 @@ To graduate from a prototype to a production-ready system:
     *   **Rationale:** Meets the requirement for a "hand-labelled" dataset while saving hours of manual data entry.
 3.  **Decision:** Outputting a dynamic `follow_up` field from the LLM.
     *   **Rationale:** Replaced hardcoded print statements in `chat.py` with context-aware follow-ups ("Would you like help with a specific model?") for a more natural conversational flow.
+4.  **Decision:** Choosing `@AppleSupport` as the brand over others.
+    *   **Rationale:** AppleSupport has high volume and a wide variety of intents (hardware, software, account, billing), providing a rich dataset for intent classification compared to a single-service brand.
+5.  **Decision:** Using `ChromaDB` for retrieval (RAG) instead of just prompting the LLM.
+    *   **Rationale:** Ensures the drafted replies are grounded in *actual* historical brand policies, preventing the LLM from hallucinating generic troubleshooting advice.
+6.  **Decision:** Choosing `SentenceTransformers` (`all-MiniLM-L6-v2`) for embeddings.
+    *   **Rationale:** It's lightweight, runs locally without an API key, and is fast enough to process the corpus in under 15 minutes as required.
+7.  **Decision:** Making the LLM generate a dynamic `escalation_reason`.
+    *   **Rationale:** Returning just a boolean `False` for auto-handle isn't helpful to human agents. A generated reason (e.g., "Customer is highly frustrated") provides immediate context upon hand-off.
+8.  **Decision:** Capping the pipeline evaluation at a subset during development.
+    *   **Rationale:** LLM API calls are rate-limited and incur costs. The `evaluate.py` script supports a `--max` flag to allow fast iteration on the evaluation loop before running a full pass.
+9.  **Decision:** Using Cohen's Kappa for human-LLM judge calibration.
+    *   **Rationale:** Simple accuracy doesn't account for agreement by chance. Kappa is the statistical standard for measuring inter-rater reliability.
+10. **Decision:** Defining a fallback mock LLM response system.
+    *   **Rationale:** Ensures the grading pipeline is fully reproducible and runnable by evaluators in under 15 minutes, even if they don't supply a `.env` API key.
+11. **Decision:** Creating an interactive CLI tool (`label_golden_set.py`) for human review.
+    *   **Rationale:** Opening a CSV in Excel is error-prone. A CLI tool enforces valid enum inputs, displays context, and prevents accidental formatting corruption.
+12. **Decision:** Computing baselines dynamically in `evaluate.py` rather than hardcoding.
+    *   **Rationale:** If the taxonomy or dataset is updated in the future, hardcoded baseline numbers in the report would become stale. Dynamic calculation ensures metrics stay accurate.

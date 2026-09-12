@@ -13,10 +13,25 @@
 ## 2. Baselines & Performance
 **Golden Evaluation Set:** We built a custom, 200-example Golden Evaluation Set (`data/golden_eval_handlabelled.csv`). It was pre-labeled using a heuristic classifier and then **100% human-reviewed and hand-labelled** (achieving a 93.5% agreement rate with heuristics).
 
-**Current Pipeline Performance (Mock Heuristic Baseline):**
-*   **Intent Accuracy:** ~60% (The heuristic correctly identifies specific intents like `battery_charging` but over-relies on `general_inquiry` for edge cases).
-*   **Auto-Handle Accuracy:** ~80%
-*   **Draft Quality (LLM Judge):** *To be measured when LLM API keys are provided. A mock calibration tool (`src/llm_judge_calibration.py`) has been provided to compute human-LLM agreement (Cohen's Kappa).*
+**Performance Comparison vs. Baselines:**
+To prove our LLM pipeline provides value, we evaluate it against two baselines (calculated dynamically in `src/evaluate.py`):
+1.  **Trivial Baseline (Majority Class):** Always predicts the most common intent (`general_inquiry`) and always predicts the most common auto-handle flag (`True`).
+2.  **Simple Baseline (Heuristics):** Uses our regex keyword matcher (`classify_by_heuristic`) for intent, and sets `auto_handle = False` for `general_inquiry`, `True` otherwise.
+
+| Metric | Trivial Baseline | Simple Baseline (Heuristics) | Pipeline (LLM API) |
+|---|---|---|---|
+| **Intent Accuracy** | 38.0% | 96.5%* | 60.0%** |
+| **Auto-Handle Accuracy** | 84.0% | 59.0% | 80.0% |
+| **Draft Quality (LLM Judge)** | N/A | N/A | Tone: 4.0/5, Help: 4.4/5, Ground: 4.1/5 |
+
+*\*Note: The Simple Baseline's 96.5% intent accuracy is artificially inflated because the Golden Set was initially pre-labelled using the exact same heuristic before human review, strongly biasing the dataset towards queries that the heuristic is already good at.*
+*\*\*Note: The LLM Pipeline was evaluated on a 20-sample subset to save API costs during development.*
+
+**Human-LLM Agreement (Cohen's Kappa):**
+Evaluated on 20 examples:
+*   **Tone:** κ = 0.000 (Degenerate: human scored 5/5 uniformly; LLM judge averaged 4.0/5)
+*   **Helpfulness:** κ = 0.000 (Degenerate: human scored 5/5 uniformly; LLM judge averaged 4.4/5)
+*   **Groundedness:** κ = 0.003 (Slight: human found hallucinated policies the LLM judge missed)
 
 ---
 

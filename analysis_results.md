@@ -56,7 +56,7 @@ Every requirement from [problem_statement.txt](file:///home/Joydeep/Desktop/Hive
 | Required Section | Verdict | Details |
 |---|---|---|
 | **Problem framing**: what "good" means, what you chose not to build | ✅ Met | [REPORT.md §1](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L3-L9) defines the objective, approach, and evaluation framework. |
-| **Results vs. at least two baselines** (trivial + simple) | ⚠️ Partially Met | [REPORT.md §2](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L13-L19) reports the mock heuristic baseline performance. **However**, an explicit trivial baseline (e.g., "always predict `general_inquiry`") and a comparison table showing improvement are not included. |
+| **Results vs. at least two baselines** (trivial + simple) | ✅ Met | [REPORT.md §2](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L13-L25) compares the LLM pipeline against a Trivial (majority-class) and Simple (heuristic) baseline in a comparison table. |
 | **Failure analysis**: top 5 failure modes with real examples and hypotheses | ⚠️ Partially Met | [REPORT.md §3](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L23-L31) identifies 3 failure modes (sarcasm, multi-intent, context window). **Gaps**: only 3 modes instead of 5, and no real verbatim example tweets are shown. |
 | **"What is misleading about my headline number?"** — mandatory section | ✅ Met | [REPORT.md §4](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L35-L37) addresses over-representation of `general_inquiry` inflating accuracy and LLM Judge verbosity/self-enhancement bias. |
 | **What you'd do next with one more week** | ✅ Met | [REPORT.md §5](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L41-L45) lists 3 concrete next steps (fine-tuned embeddings, knowledge base RAG, continuous evaluation). |
@@ -86,7 +86,7 @@ Every requirement from [problem_statement.txt](file:///home/Joydeep/Desktop/Hive
 | Evaluation harness (metrics + LLM judge) | ✅ Complete |
 | Human-agreement study (Cohen's Kappa) | ✅ Complete |
 | Report — Problem framing | ✅ Complete |
-| Report — Results vs. baselines | ⚠️ Needs explicit trivial baseline comparison |
+| Report — Results vs. baselines | ✅ Complete |
 | Report — Failure analysis (top 5) | ⚠️ Has 3, needs 5 with real examples |
 | Report — "What is misleading?" | ✅ Complete |
 | Report — What next with one more week | ✅ Complete |
@@ -99,5 +99,4 @@ Every requirement from [problem_statement.txt](file:///home/Joydeep/Desktop/Hive
 
 1. **🟡 Important — Expand the Decision Log to 10-15 items.** Currently only 3. Add decisions about: choice of Groq API, ChromaDB vs. other vector stores, sentence-transformers model choice, escalation heuristics, follow-up field design, two-stage labelling, Kappa metric choice, 200-sample size, mock fallback design, random seed for reproducibility, etc.
 2. **🟡 Important — Add 2 more failure modes to Failure Analysis (total 5)** with real verbatim tweet examples from the golden set.
-3. **🟡 Important — Add an explicit trivial baseline** (e.g., "always predict `general_inquiry` + `auto_handle=True`") and show the comparison in a table in REPORT.md.
-4. **🟢 Nice-to-have — Add a Citations/Acknowledgements section** to README.md or REPORT.md citing AI assistant usage and any borrowed code/ideas.
+3. **🟢 Nice-to-have — Add a Citations/Acknowledgements section** to README.md or REPORT.md citing AI assistant usage and any borrowed code/ideas.

@@ -51,7 +51,7 @@ def compute_metrics(results_df: pd.DataFrame):
         y_pred_intent = results_df['predicted_intent'].str.lower()
         
         acc = accuracy_score(y_true_intent, y_pred_intent)
-        print(f"Intent Accuracy: {acc:.4f}")
+        print(f"Intent Accuracy (Pipeline): {acc:.4f}")
         print("\nIntent Classification Report:")
         print(classification_report(y_true_intent, y_pred_intent, zero_division=0))
     
@@ -63,8 +63,34 @@ def compute_metrics(results_df: pd.DataFrame):
         
         acc_auto = accuracy_score(y_true_auto, y_pred_auto)
         f1_auto = f1_score(y_true_auto, y_pred_auto)
-        print(f"Auto-Handle Accuracy: {acc_auto:.4f}")
+        print(f"Auto-Handle Accuracy (Pipeline): {acc_auto:.4f}")
         print(f"Auto-Handle F1 Score: {f1_auto:.4f}")
+        
+    print("\n--- Baselines Comparison ---")
+    if 'expected_intent' in results_df.columns and 'expected_auto_handle' in results_df.columns:
+        majority_intent = y_true_intent.mode()[0]
+        majority_auto = y_true_auto.mode()[0]
+        
+        trivial_intent_acc = accuracy_score(y_true_intent, [majority_intent]*len(y_true_intent))
+        trivial_auto_acc = accuracy_score(y_true_auto, [majority_auto]*len(y_true_auto))
+        
+        print(f"Trivial Baseline (Majority Class: '{majority_intent}', {majority_auto}):")
+        print(f"  Intent Accuracy: {trivial_intent_acc:.4f}")
+        print(f"  Auto-Handle Accuracy: {trivial_auto_acc:.4f}")
+        
+        from src.intent_discovery import classify_by_heuristic
+        simple_intent_preds = [classify_by_heuristic(q).lower() for q in results_df['customer_query']]
+        simple_auto_preds = [True if i != 'general_inquiry' else False for i in simple_intent_preds]
+        
+        simple_intent_acc = accuracy_score(y_true_intent, simple_intent_preds)
+        simple_auto_acc = accuracy_score(y_true_auto, simple_auto_preds)
+        
+        print(f"\nSimple Baseline (Heuristic Keywords):")
+        print(f"  Intent Accuracy: {simple_intent_acc:.4f}")
+        print(f"  Auto-Handle Accuracy: {simple_auto_acc:.4f}")
+        print("\nPipeline (LLM API) Improvement over Baselines:")
+        print(f"  Intent: {acc - trivial_intent_acc:+.4f} vs Trivial | {acc - simple_intent_acc:+.4f} vs Simple")
+        print(f"  Auto-Handle: {acc_auto - trivial_auto_acc:+.4f} vs Trivial | {acc_auto - simple_auto_acc:+.4f} vs Simple")
 
 def llm_as_judge(results_df: pd.DataFrame, output_csv: str):
     """

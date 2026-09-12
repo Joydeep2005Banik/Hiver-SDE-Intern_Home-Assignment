@@ -57,7 +57,7 @@ Every requirement from [problem_statement.txt](file:///home/Joydeep/Desktop/Hive
 |---|---|---|
 | **Problem framing**: what "good" means, what you chose not to build | ✅ Met | [REPORT.md §1](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L3-L9) defines the objective, approach, and evaluation framework. |
 | **Results vs. at least two baselines** (trivial + simple) | ✅ Met | [REPORT.md §2](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L13-L25) compares the LLM pipeline against a Trivial (majority-class) and Simple (heuristic) baseline in a comparison table. |
-| **Failure analysis**: top 5 failure modes with real examples and hypotheses | ⚠️ Partially Met | [REPORT.md §3](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L23-L31) identifies 3 failure modes (sarcasm, multi-intent, context window). **Gaps**: only 3 modes instead of 5, and no real verbatim example tweets are shown. |
+| **Failure analysis**: top 5 failure modes with real examples and hypotheses | ✅ Met | [REPORT.md §3](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L38-L58) identifies 5 specific failure modes (hidden context, profanity misses, feature vs. bug, literal strings, multi-step context loss) and includes a real verbatim tweet example and hypothesis for each. |
 | **"What is misleading about my headline number?"** — mandatory section | ✅ Met | [REPORT.md §4](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L35-L37) addresses over-representation of `general_inquiry` inflating accuracy and LLM Judge verbosity/self-enhancement bias. |
 | **What you'd do next with one more week** | ✅ Met | [REPORT.md §5](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L41-L45) lists 3 concrete next steps (fine-tuned embeddings, knowledge base RAG, continuous evaluation). |
 | **Decision log** — 10–15 non-obvious decisions and why | ⚠️ Partially Met | [REPORT.md §6](file:///home/Joydeep/Desktop/Hiver-SDE-Intern_Home-Assignment/REPORT.md#L49-L55) has **3 decisions** documented. The problem asks for **10–15**. This needs expansion. |
@@ -87,7 +87,7 @@ Every requirement from [problem_statement.txt](file:///home/Joydeep/Desktop/Hive
 | Human-agreement study (Cohen's Kappa) | ✅ Complete |
 | Report — Problem framing | ✅ Complete |
 | Report — Results vs. baselines | ✅ Complete |
-| Report — Failure analysis (top 5) | ⚠️ Has 3, needs 5 with real examples |
+| Report — Failure analysis (top 5) | ✅ Complete |
 | Report — "What is misleading?" | ✅ Complete |
 | Report — What next with one more week | ✅ Complete |
 | Report — Decision log (10-15 items) | ⚠️ Has 3, needs 10-15 |

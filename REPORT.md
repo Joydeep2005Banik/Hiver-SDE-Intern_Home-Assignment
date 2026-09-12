@@ -40,10 +40,23 @@ Evaluated on 20 examples:
 *   **Structured Queries:** The system excels at queries with clear keywords (e.g., "my battery drains fast", "wifi won't connect"). It accurately classifies the intent and triggers an appropriate drafted response.
 *   **Escalation Triggers:** The logic correctly flags highly negative sentiment (e.g., "wtf", "fix your shit") and forces `auto_handle = False`.
 
-**Where it fails to deliver expected deliverables (Limitations):**
-*   **Sarcasm & Vague Complaints:** "Thanks Apple for another great update 🙄" is often misclassified as positive or `general_inquiry` rather than `app_bug_crash`.
-*   **Multi-Intent Queries:** "My phone is freezing and my battery is dying." The heuristic simply picks the first keyword it matches (e.g., battery).
-*   **Context Window Limits:** The mock agent currently only looks at the immediate query, ignoring if the customer has already tried standard troubleshooting steps in previous messages.
+**Top 5 Failure Modes (Limitations & Examples):**
+
+1.  **Hidden Context (Missing Images/Media)**
+    *   *Example:* "@AppleSupport hi my iphone 7 stays like this for hours. What I can do"
+    *   *Hypothesis:* The customer attached an image or video showing their screen frozen, but the dataset only provides text. The text-only agent sees a generic inquiry and attempts to auto-handle it, whereas a human would escalate or ask device-specific questions based on the visual evidence.
+2.  **Profanity & High Emotion (Escalation Misses)**
+    *   *Example:* "lm using lowercase L’s as l’s until @AppleSupport fixes this question mark shit😑"
+    *   *Hypothesis:* While explicit profanity triggers escalation, creative swearing or frustration ("shit", "trashed my brand new iphone") is sometimes misclassified as standard feedback, leading to an inappropriately cheerful automated reply to an angry customer.
+3.  **Ambiguous Feature vs. Bug Classification**
+    *   *Example:* "So you know that new SOS feature on the iPhone ? Well mine just popped off and I️ didn’t nothing to set it off . What’s going on @115858 ?"
+    *   *Hypothesis:* The agent predicts `software_update` because of keywords like "new feature," but it's actually an `app_bug_crash` about the SOS feature behaving unexpectedly. Keyword heuristics fail on descriptive, conversational bug reports.
+4.  **Misinterpreting Literal Strings vs. Grammar**
+    *   *Example:* "@AppleSupport Ok, how do I fix “it” changing to I.T."
+    *   *Hypothesis:* The agent classifies this as `general_inquiry` instead of the specific `keyboard_typing` autocorrect bug. Standard tokenization and n-gram analysis struggle to differentiate the literal string "it" from the pronoun "it".
+5.  **Multi-Step Conversational Context Loss**
+    *   *Example:* "@AppleSupport It’s hard to tell, nothing really reaches that far when I try. I have noticed that if I want to select something I have to start above it and drag my finger down to what I’m trying to press and then it’ll work"
+    *   *Hypothesis:* This is clearly a customer replying in the middle of an ongoing thread about a touch screen calibration issue (`hardware_repair`). The stateless agent receives this single message, loses the prior context, and incorrectly auto-handles it as a `general_inquiry`.
 
 ---
 

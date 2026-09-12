@@ -3,7 +3,10 @@ import json
 import chromadb
 from chromadb.utils import embedding_functions
 from openai import OpenAI
+from dotenv import load_dotenv
 from src.intent_discovery import INTENT_NAMES, INTENT_TAXONOMY
+
+load_dotenv()
 
 class SupportAgent:
     def __init__(self, db_path: str = 'data/chroma_db'):
@@ -42,15 +45,37 @@ class SupportAgent:
 
     def _mock_llm_response(self, query: str, context: str):
         # A fallback if no API key is provided, just for testing the pipeline flow.
-        # Uses the data-derived heuristic classifier so mock results are
-        # at least directionally correct.
         from src.intent_discovery import classify_by_heuristic
+        intent = classify_by_heuristic(query)
+        
+        # Diverse mock responses based on intent to make local testing more realistic
+        mock_replies = {
+            "battery_charging": "We'd like to look into this battery issue. Which iOS version are you currently running? Let us know.",
+            "account_access": "We can help you regain access to your account. Please DM us your Apple ID and we'll take a look.",
+            "connectivity": "Let's get you reconnected! Try toggling Airplane mode on and off, or resetting your network settings.",
+            "keyboard_typing": "We're aware of the autocorrect issue and a fix is included in the latest update. Please update your device.",
+            "audio_media": "We'd love to help with your audio issue. Does this happen on speaker, headphones, or both?",
+            "hardware_repair": "We can help you set up a Genius Bar appointment for a repair. DM us your location to start.",
+            "app_bug_crash": "Sorry to hear the app is crashing. Have you tried force closing the app and restarting your device?",
+            "software_update": "We understand update issues can be frustrating. Please ensure you have enough storage space and try again.",
+            "general_inquiry": "Thank you for reaching out! We are currently looking into this. DM us if you need more help."
+        }
+        
+        # Varied follow-ups based on auto-handle
+        # We will mock a few failures (auto_handle = False) for specific keywords
+        is_angry = any(word in query.lower() for word in ['wtf', 'fuck', 'shit', 'sucks', 'worst'])
+        auto_handle = not is_angry
+        
+        draft = mock_replies.get(intent, mock_replies["general_inquiry"])
+        follow_up = "Is there anything else I can help you with?" if auto_handle else "A human specialist will take over to assist you."
+        reason = "" if auto_handle else "High negative sentiment detected."
+        
         return {
-            "intent": classify_by_heuristic(query),
-            "draft_reply": "Thank you for reaching out! We are currently looking into this. DM us if you need more help.",
-            "auto_handle": True,
-            "escalation_reason": "",
-            "follow_up": "Is there anything else I can help you with?"
+            "intent": intent,
+            "draft_reply": draft,
+            "auto_handle": auto_handle,
+            "escalation_reason": reason,
+            "follow_up": follow_up
         }
 
     def process_query(self, query: str) -> dict:

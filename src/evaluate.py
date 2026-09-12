@@ -4,7 +4,10 @@ import argparse
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from src.agent import SupportAgent
+from dotenv import load_dotenv
 import json
+
+load_dotenv()
 
 def run_pipeline(input_csv: str, output_csv: str, max_samples: int = None):
     print(f"Loading {input_csv} for evaluation...")

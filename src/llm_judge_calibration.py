@@ -90,28 +90,42 @@ def llm_judge_calibration(input_csv: str):
     
     # Calculate Cohen's Kappa
     df = pd.read_csv(input_csv) # reload
-    if df['human_tone'].notna().sum() > 0 and 'llm_tone' in df.columns:
-        scored = df[df['human_tone'].notna() & df['llm_tone'].notna()].copy()
-        if len(scored) > 0:
-            # Convert to int for sklearn
-            for col in ['human_tone', 'human_helpfulness', 'human_groundedness', 'llm_tone', 'llm_helpfulness', 'llm_groundedness']:
-                scored[col] = scored[col].astype(int)
+    if 'human_tone' in df.columns and 'llm_tone' in df.columns:
+        if df['human_tone'].notna().sum() > 0 and df['llm_tone'].notna().sum() > 0:
+            scored = df[df['human_tone'].notna() & df['llm_tone'].notna()].copy()
+            if len(scored) > 0:
+                # Convert to int for sklearn
+                for col in ['human_tone', 'human_helpfulness', 'human_groundedness', 'llm_tone', 'llm_helpfulness', 'llm_groundedness']:
+                    scored[col] = scored[col].astype(int)
+                    
+                kappa_tone = cohen_kappa_score(scored['human_tone'], scored['llm_tone'])
+                kappa_help = cohen_kappa_score(scored['human_helpfulness'], scored['llm_helpfulness'])
+                kappa_ground = cohen_kappa_score(scored['human_groundedness'], scored['llm_groundedness'])
                 
-            kappa_tone = cohen_kappa_score(scored['human_tone'], scored['llm_tone'])
-            kappa_help = cohen_kappa_score(scored['human_helpfulness'], scored['llm_helpfulness'])
-            kappa_ground = cohen_kappa_score(scored['human_groundedness'], scored['llm_groundedness'])
-            
-            print(f"\n{'=' * 60}")
-            print(f"  HUMAN-LLM AGREEMENT (COHEN'S KAPPA)")
-            print(f"  (Evaluated on {len(scored)} examples)")
-            print(f"{'=' * 60}")
-            print(f"  Tone:         {kappa_tone:.3f}")
-            print(f"  Helpfulness:  {kappa_help:.3f}")
-            print(f"  Groundedness: {kappa_ground:.3f}")
-            print(f"\n  Kappa Interpretation Guide:")
-            print(f"  < 0: No agreement | 0.0-0.2: Slight | 0.2-0.4: Fair")
-            print(f"  0.4-0.6: Moderate | 0.6-0.8: Substantial | 0.8-1.0: Perfect")
-            print(f"{'=' * 60}")
+                print(f"\n{'=' * 60}")
+                print(f"  HUMAN-LLM AGREEMENT (COHEN'S KAPPA)")
+                print(f"  (Evaluated on {len(scored)} examples)")
+                print(f"{'=' * 60}")
+                print(f"  Tone:         {kappa_tone:.3f}")
+                print(f"  Helpfulness:  {kappa_help:.3f}")
+                print(f"  Groundedness: {kappa_ground:.3f}")
+                print(f"\n  Kappa Interpretation Guide:")
+                print(f"  < 0: No agreement | 0.0-0.2: Slight | 0.2-0.4: Fair")
+                print(f"  0.4-0.6: Moderate | 0.6-0.8: Substantial | 0.8-1.0: Perfect")
+                print(f"{'=' * 60}")
+            else:
+                print("\n  No overlapping human + LLM scores found to compute Kappa.")
+        else:
+            if 'llm_tone' not in df.columns or df['llm_tone'].notna().sum() == 0:
+                print("\n  LLM Judge scores not found. Run evaluate.py first:")
+                print("  python3 -m src.evaluate --max 20 --output data/evaluation_results_sample.csv")
+    elif 'human_tone' in df.columns:
+        print(f"\n  Human scores saved ({df['human_tone'].notna().sum()} scored).")
+        print("  LLM Judge scores not found. Run evaluate.py first to generate them:")
+        print("  python3 -m src.evaluate --max 20 --output data/evaluation_results_sample.csv")
+        print("  Then re-run this tool.")
+    else:
+        print("\n  No scores found in the file.")
 
 def _get_score(prompt):
     while True:

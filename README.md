@@ -55,7 +55,7 @@ Our evaluation harness computes both standard classification metrics and subject
 ## 4. Report
 The full evaluation report covers problem framing, failure analysis, misleading metrics, next steps, and system architecture.
 
-- **See the report:** [`REPORT.pdf`](REPORT.pdf)
+- **See the report:** [`REPORT/REPORT.pdf`](REPORT/REPORT.pdf)
 
 ## 5. Decision Log
 Here are 12 non-obvious decisions made during the design and implementation of this project:

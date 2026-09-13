@@ -22,12 +22,12 @@ You can run the agent on the Golden Evaluation Set (200 examples) using:
 
 ```bash
 # Run pipeline on the first 10 examples from the golden set (for speed)
-python3 src/run_pipeline.py --input data/golden_eval.csv --output data/predictions.csv --max 10
+python3 src/run_pipeline.py --input data/golden_eval_handlabelled.csv --output data/predictions.csv --max 10
 ```
 
 To run the full evaluation harness (Automated Metrics + LLM-as-a-judge):
 ```bash
-python3 src/evaluate.py --input data/golden_eval.csv --output data/evaluation_results.csv --max 20
+python3 -m src.evaluate --input data/golden_eval_handlabelled.csv --output data/evaluation_results.csv --max 20
 ```
 
 ## System Architecture
@@ -75,3 +75,9 @@ The `evaluate.py` script automatically computes:
 - **LLM-as-a-judge scores:** Tone, Helpfulness, and Groundedness (1-5 scale)
 
 See `REPORT.md` for the full evaluation report including failure analysis, misleading metric caveats, and a 12-item decision log.
+
+## Citations & Acknowledgements
+- **Dataset:** [Customer Support on Twitter](https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter) by Thought Vector (Kaggle).
+- **AI Coding Assistants:** Claude Opus 4.6 (Thinking) and Gemini 3.1 Pro (High) were used for code generation, debugging, and report drafting throughout this project.
+- **LLM API:** [Groq](https://groq.com/) (openai/gpt-oss-20b) for agent reply generation and LLM-as-a-judge scoring.
+- **Libraries:** pandas, scikit-learn, ChromaDB, Sentence Transformers (`all-MiniLM-L6-v2`), OpenAI Python SDK, tqdm, python-dotenv.

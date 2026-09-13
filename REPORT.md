@@ -3,6 +3,15 @@
 ## 1. Problem Framing
 **Objective:** Build a prototype generative support agent capable of parsing incoming tweets to `@AppleSupport`, extracting the customer's intent, deciding whether the query can be auto-handled or needs human escalation, and drafting a polite, grounded response based on historical brand replies.
 
+**What "good" means for this brand:**
+A good AppleSupport reply (1) correctly identifies the customer's underlying issue, (2) resolves or meaningfully advances the conversation in a single turn (e.g., asks the right diagnostic question), (3) does not hallucinate unsupported troubleshooting steps or policies, and (4) matches the empathetic, professional tone Apple uses on Twitter. A reply that is polite but unhelpful, or helpful but factually wrong, is not "good."
+
+**What we chose NOT to build:**
+*   Multi-turn conversation tracking (each query is stateless).
+*   Sentiment-based routing (escalation uses keyword triggers + LLM judgement, not a dedicated model).
+*   Billing, refund, or warranty claim workflows (require internal system access).
+*   Proactive outreach and non-English support.
+
 **Approach:**
 1. **Data-Driven Taxonomy:** Analyzed 106k+ conversation pairs using n-gram frequency to discover 9 robust intent categories (`battery_charging`, `account_access`, `software_update`, etc.).
 2. **Support Engine:** Created a `SupportAgent` using a mock/LLM pipeline that classifies intent, determines auto-handle eligibility, and drafts responses (including a contextual follow-up question or hand-off message).

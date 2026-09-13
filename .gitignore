@@ -3,7 +3,6 @@ dataset/twcs/twcs.csv
 dataset/twcs/
 dataset/sample.csv
 data/processed_conversations.csv
-data/chroma_db/
 
 # Python
 __pycache__/

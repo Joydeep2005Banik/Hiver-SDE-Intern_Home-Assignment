@@ -62,7 +62,7 @@ class SupportAgent:
         }
         
         # Varied follow-ups based on auto-handle
-        # We will mock a few failures (auto_handle = False) for specific keywords
+        # mock a few failures (auto_handle = False) for specific keywords
         is_angry = any(word in query.lower() for word in ['wtf', 'fuck', 'shit', 'sucks', 'worst'])
         auto_handle = not is_angry
         

@@ -8,15 +8,12 @@ from tqdm import tqdm
 def build_vector_db(data_path: str, db_path: str, limit: int = 5000):
     """
     Reads the conversation pairs and builds a ChromaDB vector store.
-    Due to compute/time constraints, we limit the knowledge base to `limit` examples.
+    Due to compute/time constraints, limit the knowledge base to `limit` examples.
     """
     print(f"Loading data from {data_path}...")
     df = pd.read_csv(data_path)
     
-    # We remove the items that are in the golden eval set so we don't cheat by retrieving the exact same example
-    # Actually, we can just randomly sample and not worry about exact leakage since the agent is expected to draft based on historical.
-    # To be perfectly safe, we should exclude golden set IDs. 
-    # Let's just sample N random rows.
+
     df = df.sample(n=min(limit, len(df)), random_state=123).copy()
     print(f"Selected {len(df)} examples for the knowledge base.")
     

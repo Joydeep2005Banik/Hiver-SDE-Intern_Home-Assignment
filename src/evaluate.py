@@ -103,7 +103,6 @@ def compute_metrics(results_df: pd.DataFrame):
 def llm_as_judge(results_df: pd.DataFrame, output_csv: str):
     """
     Evaluates the predicted_draft_reply using an LLM and saves row-by-row scores.
-    Requires OPENAI_API_KEY or GROQ_API_KEY.
     """
     api_key = os.getenv("OPENAI_API_KEY")
     groq_api_key = os.getenv("GROQ_API_KEY")

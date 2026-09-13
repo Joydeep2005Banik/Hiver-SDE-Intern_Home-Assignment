@@ -67,6 +67,8 @@ Here are 12 non-obvious decisions made during the design and implementation of t
 11. **Built an interactive CLI tool (`label_golden_set.py`) for human review.** Opening a CSV in a spreadsheet editor is error-prone; the CLI enforces valid enum inputs, shows context, and prevents accidental formatting corruption.
 12. **Computed baselines dynamically in `evaluate.py` rather than hardcoding them.** If the taxonomy or dataset changes later, hardcoded baseline numbers in the report would go stale; dynamic computation keeps metrics accurate.
 
----
-
-*Powered by Claude Opus 4.6 (Thinking) and Gemini 3.1 Pro (High).*
+## 6. Citations
+- **Dataset:** [Customer Support on Twitter](https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter) by Thought Vector (Kaggle).
+- **AI Coding Assistants:** Claude Opus 4.6 (Thinking) and Gemini 3.1 Pro (High) were used for code generation, debugging, and report drafting throughout this project.
+- **LLM API:** [Groq](https://groq.com/) (`openai/gpt-oss-20b`) for agent reply generation and LLM-as-a-judge scoring.
+- **Libraries:** pandas, scikit-learn, ChromaDB, Sentence Transformers (`all-MiniLM-L6-v2`), OpenAI Python SDK, tqdm, python-dotenv.

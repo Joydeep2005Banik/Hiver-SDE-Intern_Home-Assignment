@@ -67,5 +67,11 @@ graph TD
 - `data/`: Contains the processed datasets and ChromaDB files.
 
 ## Evaluation & Golden Set
-We sampled 200 random queries for the **Golden Evaluation Set**. Since this was built autonomously, we applied strict regex heuristic rules to serve as ground-truth labels for Intent and Auto-Handle vs. Escalate decisions.
-The `evaluate.py` script computes Accuracy/F1 for these categories, and utilizes an LLM Judge prompt to score the agent's drafted replies on Tone, Helpfulness, and Groundedness out of 5.
+We sampled 200 random queries for the **Golden Evaluation Set** and **hand-labelled every example** using an interactive CLI tool (`src/label_golden_set.py`). The methodology is documented in `golden_set_methodology.md`.
+
+The `evaluate.py` script automatically computes:
+- **Pipeline metrics:** Intent Accuracy/F1, Auto-Handle Accuracy/F1
+- **Two baselines for comparison:** a Trivial baseline (majority class) and a Simple baseline (heuristic keyword classifier)
+- **LLM-as-a-judge scores:** Tone, Helpfulness, and Groundedness (1-5 scale)
+
+See `REPORT.md` for the full evaluation report including failure analysis, misleading metric caveats, and a 12-item decision log.

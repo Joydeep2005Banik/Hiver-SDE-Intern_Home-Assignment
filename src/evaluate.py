@@ -44,6 +44,11 @@ def run_pipeline(input_csv: str, output_csv: str, max_samples: int = None):
 def compute_metrics(results_df: pd.DataFrame):
     print("\n--- Evaluation Metrics ---")
     
+    acc = None
+    acc_auto = None
+    y_true_intent = None
+    y_true_auto = None
+    
     # Intent Metrics
     if 'expected_intent' in results_df.columns and not results_df['expected_intent'].isna().all():
         # Clean labels to lowercase just in case
@@ -66,8 +71,9 @@ def compute_metrics(results_df: pd.DataFrame):
         print(f"Auto-Handle Accuracy (Pipeline): {acc_auto:.4f}")
         print(f"Auto-Handle F1 Score: {f1_auto:.4f}")
         
-    print("\n--- Baselines Comparison ---")
-    if 'expected_intent' in results_df.columns and 'expected_auto_handle' in results_df.columns:
+    # Baselines Comparison (only when ground truth is available for both)
+    if y_true_intent is not None and y_true_auto is not None:
+        print("\n--- Baselines Comparison ---")
         majority_intent = y_true_intent.mode()[0]
         majority_auto = y_true_auto.mode()[0]
         
@@ -88,9 +94,11 @@ def compute_metrics(results_df: pd.DataFrame):
         print(f"\nSimple Baseline (Heuristic Keywords):")
         print(f"  Intent Accuracy: {simple_intent_acc:.4f}")
         print(f"  Auto-Handle Accuracy: {simple_auto_acc:.4f}")
-        print("\nPipeline (LLM API) Improvement over Baselines:")
-        print(f"  Intent: {acc - trivial_intent_acc:+.4f} vs Trivial | {acc - simple_intent_acc:+.4f} vs Simple")
-        print(f"  Auto-Handle: {acc_auto - trivial_auto_acc:+.4f} vs Trivial | {acc_auto - simple_auto_acc:+.4f} vs Simple")
+        
+        if acc is not None and acc_auto is not None:
+            print("\nPipeline (LLM API) Improvement over Baselines:")
+            print(f"  Intent: {acc - trivial_intent_acc:+.4f} vs Trivial | {acc - simple_intent_acc:+.4f} vs Simple")
+            print(f"  Auto-Handle: {acc_auto - trivial_auto_acc:+.4f} vs Trivial | {acc_auto - simple_auto_acc:+.4f} vs Simple")
 
 def llm_as_judge(results_df: pd.DataFrame, output_csv: str):
     """

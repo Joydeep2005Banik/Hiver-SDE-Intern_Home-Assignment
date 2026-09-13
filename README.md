@@ -23,7 +23,7 @@ We have provided a pre-processed dataset (`data/processed_conversations.csv`) an
 
 To run the agent on the Golden Evaluation Set (first 10 examples for speed):
 ```bash
-python3 src/run_pipeline.py --input data/golden_eval_handlabelled.csv --output data/predictions.csv --max 10
+python3 -m src.run_pipeline --input data/golden_eval_handlabelled.csv --output data/predictions.csv --max 10
 ```
 
 To run the full evaluation harness (Automated Metrics + LLM-as-a-judge):

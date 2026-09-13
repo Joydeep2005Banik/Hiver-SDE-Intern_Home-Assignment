@@ -42,7 +42,7 @@ Our evaluation harness computes both standard classification metrics and subject
 
 - **Automated Metrics:** Calculates Intent Accuracy/F1 and Auto-Handle Routing Accuracy against the Golden Set, comparing the LLM pipeline dynamically against a Trivial (majority-class) and Simple (heuristic) baseline.
 - **LLM-as-a-judge:** An LLM rubric scores the agent's drafted replies on Tone (1-5), Helpfulness (1-5), and Groundedness (1-5).
-- **Human Calibration:** We provide evidence of how well our LLM judge agrees with a human evaluator using Cohen's Kappa ($\kappa$). (Run `python3 -m src.llm_judge_calibration` to see the scores).
+- **Human Calibration:** We measured how well the LLM judge agrees with a human evaluator using Cohen's Kappa ($\kappa$) on 20 examples. The results showed near-zero agreement for Tone ($\kappa=0.000$) and Helpfulness ($\kappa=0.000$) due to humans uniformly giving 5/5 scores (making the metric degenerate), and slight agreement for Groundedness ($\kappa=0.003$) because humans caught hallucinated policies that the LLM missed. (Run `python3 -m src.llm_judge_calibration` to reproduce).
 
 - **Evaluation File:** [`src/evaluate.py`](src/evaluate.py)
 

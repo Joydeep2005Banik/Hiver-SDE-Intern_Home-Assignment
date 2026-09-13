@@ -1,0 +1,133 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\title{Generative Support Agent: Evaluation Report}
+\author{Hiver SDE Intern Assessment}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem Framing}
+\textbf{Objective:} Build a prototype generative support agent capable of parsing incoming tweets to \texttt{@AppleSupport}, extracting the customer's intent, deciding whether the query can be auto-handled or needs human escalation, and drafting a polite, grounded response based on historical brand replies.
+
+\textbf{What "good" means for this brand:}
+A good AppleSupport reply (1) correctly identifies the customer's underlying issue, (2) resolves or meaningfully advances the conversation in a single turn (e.g., asks the right diagnostic question), (3) does not hallucinate unsupported troubleshooting steps or policies, and (4) matches the empathetic, professional tone Apple uses on Twitter. A reply that is polite but unhelpful, or helpful but factually wrong, is not "good."
+
+\textbf{What we chose NOT to build:}
+\begin{itemize}[noitemsep]
+    \item Multi-turn conversation tracking (each query is stateless).
+    \item Sentiment-based routing (escalation uses keyword triggers + LLM judgement, not a dedicated model).
+    \item Billing, refund, or warranty claim workflows (require internal system access).
+    \item Proactive outreach and non-English support.
+\end{itemize}
+
+\textbf{Approach:}
+\begin{enumerate}[noitemsep]
+    \item \textbf{Data-Driven Taxonomy:} Analyzed 106k+ conversation pairs using n-gram frequency to discover 9 robust intent categories (\texttt{battery\_charging}, \texttt{account\_access}, \texttt{software\_update}, etc.).
+    \item \textbf{Support Engine:} Created a \texttt{SupportAgent} using a mock/LLM pipeline that classifies intent, determines auto-handle eligibility, and drafts responses (including a contextual follow-up question or hand-off message).
+    \item \textbf{Evaluation Framework:} Developed a local evaluation harness (\texttt{evaluate.py}) that scores Intent Classification (Accuracy/F1), Auto-Handle Routing, and Draft Quality (via LLM-as-a-judge for Tone, Helpfulness, and Groundedness).
+\end{enumerate}
+
+\section{Results vs. Baselines}
+\textbf{Golden Evaluation Set:} We built a custom, 200-example Golden Evaluation Set (\texttt{data/golden\_eval\_handlabelled.csv}). It was pre-labeled using a heuristic classifier and then \textbf{100\% human-reviewed and hand-labelled} (achieving a 93.5\% agreement rate with heuristics).
+
+\textbf{Performance Comparison vs. Baselines:}
+To prove our LLM pipeline provides value, we evaluate it against two baselines (calculated dynamically in \texttt{src/evaluate.py}):
+\begin{enumerate}[noitemsep]
+    \item \textbf{Trivial Baseline (Majority Class):} Always predicts the most common intent (\texttt{general\_inquiry}) and always predicts the most common auto-handle flag (\texttt{True}).
+    \item \textbf{Simple Baseline (Heuristics):} Uses our regex keyword matcher (\texttt{classify\_by\_heuristic}) for intent, and sets \texttt{auto\_handle = False} for \texttt{general\_inquiry}, \texttt{True} otherwise.
+\end{enumerate}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{lccc}
+\toprule
+\textbf{Metric} & \textbf{Trivial Baseline} & \textbf{Simple Baseline (Heuristics)} & \textbf{Pipeline (LLM API)} \\
+\midrule
+\textbf{Intent Accuracy} & 38.0\% & 96.5\%$^*$ & 60.0\%$^{**}$ \\
+\textbf{Auto-Handle Accuracy} & 84.0\% & 59.0\% & 80.0\% \\
+\textbf{Draft Quality (LLM Judge)} & N/A & N/A & Tone: 4.0/5, Help: 4.4/5, Ground: 4.1/5 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent \small{$^*$Note: The Simple Baseline's 96.5\% intent accuracy is artificially inflated because the Golden Set was initially pre-labelled using the exact same heuristic before human review, strongly biasing the dataset towards queries that the heuristic is already good at.} \\
+\small{$^{**}$Note: The LLM Pipeline was evaluated on a 20-sample subset to save API costs during development.}
+
+\normalsize
+\textbf{Human-LLM Agreement (Cohen's Kappa):}
+Evaluated on 20 examples:
+\begin{itemize}[noitemsep]
+    \item \textbf{Tone:} $\kappa$ = 0.000 (Degenerate: human scored 5/5 uniformly; LLM judge averaged 4.0/5)
+    \item \textbf{Helpfulness:} $\kappa$ = 0.000 (Degenerate: human scored 5/5 uniformly; LLM judge averaged 4.4/5)
+    \item \textbf{Groundedness:} $\kappa$ = 0.003 (Slight: human found hallucinated policies the LLM judge missed)
+\end{itemize}
+
+\section{Failure Analysis (Where it works vs. fails)}
+\textbf{Where it performs as expected:}
+\begin{itemize}[noitemsep]
+    \item \textbf{Structured Queries:} The system excels at queries with clear keywords (e.g., "my battery drains fast", "wifi won't connect"). It accurately classifies the intent and triggers an appropriate drafted response.
+    \item \textbf{Escalation Triggers:} The logic correctly flags highly negative sentiment (e.g., "wtf", "fix your shit") and forces \texttt{auto\_handle = False}.
+\end{itemize}
+
+\textbf{Top 5 Failure Modes (Limitations \& Examples):}
+\begin{enumerate}
+    \item \textbf{Hidden Context (Missing Images/Media)}
+        \begin{itemize}[noitemsep]
+            \item \textit{Example:} "@AppleSupport hi my iphone 7 stays like this for hours. What I can do"
+            \item \textit{Hypothesis:} The customer attached an image or video showing their screen frozen, but the dataset only provides text. The text-only agent sees a generic inquiry and attempts to auto-handle it, whereas a human would escalate or ask device-specific questions based on the visual evidence.
+        \end{itemize}
+    \item \textbf{Profanity \& High Emotion (Escalation Misses)}
+        \begin{itemize}[noitemsep]
+            \item \textit{Example:} "lm using lowercase L’s as l’s until @AppleSupport fixes this question mark shit😑"
+            \item \textit{Hypothesis:} While explicit profanity triggers escalation, creative swearing or frustration ("shit", "trashed my brand new iphone") is sometimes misclassified as standard feedback, leading to an inappropriately cheerful automated reply to an angry customer.
+        \end{itemize}
+    \item \textbf{Ambiguous Feature vs. Bug Classification}
+        \begin{itemize}[noitemsep]
+            \item \textit{Example:} "So you know that new SOS feature on the iPhone ? Well mine just popped off and I️ didn’t nothing to set it off . What’s going on @115858 ?"
+            \item \textit{Hypothesis:} The agent predicts \texttt{software\_update} because of keywords like "new feature," but it's actually an \texttt{app\_bug\_crash} about the SOS feature behaving unexpectedly. Keyword heuristics fail on descriptive, conversational bug reports.
+        \end{itemize}
+    \item \textbf{Misinterpreting Literal Strings vs. Grammar}
+        \begin{itemize}[noitemsep]
+            \item \textit{Example:} "@AppleSupport Ok, how do I fix “it” changing to I.T."
+            \item \textit{Hypothesis:} The agent classifies this as \texttt{general\_inquiry} instead of the specific \texttt{keyboard\_typing} autocorrect bug. Standard tokenization and n-gram analysis struggle to differentiate the literal string "it" from the pronoun "it".
+        \end{itemize}
+    \item \textbf{Multi-Step Conversational Context Loss}
+        \begin{itemize}[noitemsep]
+            \item \textit{Example:} "@AppleSupport It’s hard to tell, nothing really reaches that far when I try. I have noticed that if I want to select something I have to start above it and drag my finger down to what I’m trying to press and then it’ll work"
+            \item \textit{Hypothesis:} This is clearly a customer replying in the middle of an ongoing thread about a touch screen calibration issue (\texttt{hardware\_repair}). The stateless agent receives this single message, loses the prior context, and incorrectly auto-handles it as a \texttt{general\_inquiry}.
+        \end{itemize}
+\end{enumerate}
+
+\section{What is Misleading in Current Metrics?}
+\begin{itemize}
+    \item \textbf{Over-representation of "General Inquiry":} Because our taxonomy covers $\sim$60\% of specific issues, 40\% of queries fall into the \texttt{general\_inquiry} bucket. A high accuracy on \texttt{general\_inquiry} artificially inflates the overall accuracy score, masking poor performance on rarer, more complex intents.
+    \item \textbf{LLM Judge Bias:} The LLM-as-a-judge may suffer from "verbosity bias" (scoring longer drafted replies higher, even if they aren't more helpful) or "self-enhancement bias" (preferring its own generated style over human brevity). This is why the Human-LLM Calibration tool is critical.
+\end{itemize}
+
+\section{Next Steps \& Scaling}
+To graduate from a prototype to a production-ready system:
+\begin{enumerate}
+    \item \textbf{Migrate to a fine-tuned embedding model (e.g., BGE-large)} for semantic intent classification rather than relying on keyword heuristics.
+    \item \textbf{Implement RAG (Retrieval-Augmented Generation):} Feed the LLM real knowledge base articles (from Apple Support) rather than just historical tweets, to ensure factual grounding on steps like "How to reset SMC."
+    \item \textbf{Deploy Continuous Evaluation:} Route 5\% of all LLM-drafted replies to human QA agents to continuously monitor the Cohen's Kappa agreement score and guard against model drift.
+\end{enumerate}
+
+\section{System Architecture}
+The system consists of three main components: Data \& Knowledge Base, Core AI Agent, and Evaluation Framework.
+\begin{enumerate}
+    \item \textbf{Data \& Knowledge Base:} The Raw Twitter Dataset is processed into a Processed Conversations CSV (\texttt{src/data\_prep.py}), which is then embedded into a ChromaDB Vector Store using Sentence Transformers (\texttt{src/build\_rag.py}).
+    \item \textbf{Core AI Agent:} The Customer Query is passed to the SupportAgent Engine (\texttt{src/agent.py}), which performs semantic search against ChromaDB to fetch the Top 3 Historical Contexts. The query, context, and history are passed to the LLM API (Groq/OpenAI), which returns a JSON Object containing the Agent Decision (Intent, Reply, Auto-Handle).
+    \item \textbf{Evaluation Framework:} The Processed Conversations CSV is used to build a Golden Eval Set (\texttt{src/generate\_golden\_set.py}). The Testing Harness (\texttt{src/evaluate.py}) evaluates Simulated Queries and calculates Performance Metrics (Accuracy, Helpfulness, Tone) via LLM-as-a-judge.
+\end{enumerate}
+
+\end{document}
